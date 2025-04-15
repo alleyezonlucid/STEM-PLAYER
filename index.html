@@ -223,13 +223,13 @@
     <div class="container">
         <div class="song-selector">
             <select id="song-select">
-                <option value="">Seleccionar canciÃ³n</option>
+                <option value="">Seleccionar canción</option>
             </select>
         </div>
         
         <div class="transport-controls">
-            <button id="play-btn">â–¶ Reproducir</button>
-            <button id="stop-btn">â–  Detener</button>
+            <button id="play-btn">▶ Reproducir</button>
+            <button id="stop-btn">■ Detener</button>
             <div class="time-display">
                 <span id="current-time">00:00.000</span> / <span id="total-time">00:00.000</span>
             </div>
@@ -275,7 +275,7 @@
                 return audioContext;
             }
             
-            // FunciÃ³n para obtener la lista de archivos del repositorio
+            // Función para obtener la lista de archivos del repositorio
             async function fetchRepositoryFiles() {
                 try {
                     const response = await fetch(apiUrl);
@@ -327,7 +327,7 @@
                     const songs = extractSongNames(files);
                     
                     // Limpiamos el select
-                    songSelect.innerHTML = '<option value="">Seleccionar canciÃ³n</option>';
+                    songSelect.innerHTML = '<option value="">Seleccionar canción</option>';
                     
                     if (Object.keys(songs).length === 0) {
                         tracksContainer.innerHTML = '<div class="error-message">No se encontraron canciones con el formato correcto en el repositorio.</div>';
@@ -344,7 +344,7 @@
                     
                     availableSongs = songs;
                     
-                    tracksContainer.innerHTML = '<div class="loading">Selecciona una canciÃ³n para cargar sus stems</div>';
+                    tracksContainer.innerHTML = '<div class="loading">Selecciona una canción para cargar sus stems</div>';
                 } catch (error) {
                     tracksContainer.innerHTML = `<div class="error-message">Error al obtener archivos del repositorio: ${error.message}</div>`;
                 }
@@ -356,7 +356,7 @@
                 // Inicializar el contexto de audio si no existe
                 initAudioContext();
                 
-                // Detener la reproducciÃ³n actual si existe
+                // Detener la reproducción actual si existe
                 stopPlayback();
                 
                 const stemFiles = availableSongs[songName];
@@ -402,7 +402,7 @@
                     const loadedTracks = await Promise.all(audioPromises);
                     tracks = loadedTracks;
                     
-                    // Mostrar la duraciÃ³n total
+                    // Mostrar la duración total
                     if (tracks.length > 0) {
                         const duration = tracks[0].audio.duration;
                         totalTimeDisplay.textContent = formatTime(duration);
@@ -447,7 +447,7 @@
             
             function generateWaveformData(audioBuffer) {
                 const channelData = audioBuffer.getChannelData(0);
-                const samples = 1000; // NÃºmero de muestras para la forma de onda
+                const samples = 1000; // Número de muestras para la forma de onda
                 const blockSize = Math.floor(channelData.length / samples);
                 const waveformData = [];
                 
@@ -479,15 +479,15 @@
                 
                 const muteBtn = document.createElement('button');
                 muteBtn.className = 'track-button mute-btn';
-                muteBtn.innerHTML = 'ðŸ”Š';
+                muteBtn.innerHTML = '🔊';
                 muteBtn.dataset.muted = 'false';
                 muteBtn.addEventListener('click', () => {
                     const isMuted = muteBtn.dataset.muted === 'true';
                     track.audio.muted = !isMuted;
                     muteBtn.dataset.muted = !isMuted;
-                    muteBtn.innerHTML = !isMuted ? 'ðŸ”‡' : 'ðŸ”Š';
+                    muteBtn.innerHTML = !isMuted ? '🔇' : '🔊';
                     
-                    // Actualizar la visualizaciÃ³n del waveform
+                    // Actualizar la visualización del waveform
                     if (track.waveformCanvas) {
                         drawWaveform(track, track.waveformCanvas);
                     }
@@ -515,7 +515,7 @@
                             if (i === index) {
                                 t.audio.muted = false;
                                 document.querySelectorAll('.track')[i].querySelector('.mute-btn').dataset.muted = 'false';
-                                document.querySelectorAll('.track')[i].querySelector('.mute-btn').innerHTML = 'ðŸ”Š';
+                                document.querySelectorAll('.track')[i].querySelector('.mute-btn').innerHTML = '🔊';
                             } else {
                                 t.audio.muted = true;
                             }
@@ -529,7 +529,7 @@
                         // Restaurar iconos de mute
                         document.querySelectorAll('.mute-btn').forEach(btn => {
                             btn.dataset.muted = 'false';
-                            btn.innerHTML = 'ðŸ”Š';
+                            btn.innerHTML = '🔊';
                         });
                     }
                     
@@ -545,7 +545,7 @@
                 trackTitle.className = 'track-title';
                 trackTitle.textContent = track.type;
                 
-                // AÃ±adir los controles al lado del tÃ­tulo
+                // Añadir los controles al lado del título
                 trackControls.appendChild(muteBtn);
                 trackControls.appendChild(soloBtn);
                 trackInfo.appendChild(trackControls);
@@ -589,7 +589,7 @@
                     drawWaveform(track, waveformCanvas);
                 }
                 
-                // Agregar evento para redibujar cuando cambie el tamaÃ±o
+                // Agregar evento para redibujar cuando cambie el tamaño
                 window.addEventListener('resize', () => {
                     waveformCanvas.width = waveformContainer.clientWidth;
                     if (track.waveformData) {
@@ -613,7 +613,7 @@
                 trackElement.appendChild(volumeSlider);
                 tracksContainer.appendChild(trackElement);
                 
-                // Ajustar el ancho del canvas despuÃ©s de que se haya aÃ±adido al DOM
+                // Ajustar el ancho del canvas después de que se haya añadido al DOM
                 setTimeout(() => {
                     waveformCanvas.width = waveformContainer.clientWidth;
                     if (track.waveformData) {
@@ -646,7 +646,7 @@
                     ctx.fillRect(i, (height / 2) - value, 2, value * 2);
                 }
                 
-                // Dibujar la posiciÃ³n actual de reproducciÃ³n
+                // Dibujar la posición actual de reproducción
                 if (isPlaying && track.audio.duration > 0) {
                     const playbackPosition = track.audio.currentTime / track.audio.duration;
                     const lineX = Math.floor(playbackPosition * width);
@@ -669,14 +669,14 @@
             function startPlayback() {
                 if (!tracks.length || isPlaying) return;
                 
-                // Asegurarse de que el contexto de audio estÃ¡ activo
+                // Asegurarse de que el contexto de audio está activo
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
                 
                 const currentTime = tracks[0].audio.currentTime || 0;
                 
-                // Configurar todos los tracks para reproducciÃ³n sincronizada
+                // Configurar todos los tracks para reproducción sincronizada
                 const playPromises = tracks.map(track => {
                     track.audio.currentTime = currentTime;
                     return track.audio.play();
@@ -685,14 +685,14 @@
                 Promise.all(playPromises)
                     .then(() => {
                         isPlaying = true;
-                        playBtn.textContent = "â¸ï¸ Pausar";
+                        playBtn.textContent = "⏸️ Pausar";
                         
-                        // Iniciar la actualizaciÃ³n de la interfaz
+                        // Iniciar la actualización de la interfaz
                         updatePlaybackUI();
                     })
                     .catch(error => {
                         console.error('Error al reproducir:', error);
-                        alert('Error al iniciar la reproducciÃ³n. Puede que el navegador bloquee la reproducciÃ³n automÃ¡tica.');
+                        alert('Error al iniciar la reproducción. Puede que el navegador bloquee la reproducción automática.');
                     });
             }
             
@@ -704,7 +704,7 @@
                 });
                 
                 isPlaying = false;
-                playBtn.textContent = "â–¶ Reproducir";
+                playBtn.textContent = "▶ Reproducir";
                 
                 if (animationFrame) {
                     cancelAnimationFrame(animationFrame);
@@ -718,7 +718,7 @@
                 tracks.forEach(track => {
                     track.audio.currentTime = 0;
                     
-                    // Actualizar la visualizaciÃ³n del waveform
+                    // Actualizar la visualización del waveform
                     if (track.waveformCanvas) {
                         drawWaveform(track, track.waveformCanvas);
                     }
@@ -749,7 +749,7 @@
                         });
                     }
                     
-                    // Verificar si la reproducciÃ³n ha terminado
+                    // Verificar si la reproducción ha terminado
                     if (currentTime >= duration - 0.1) {
                         stopPlayback();
                         return;
@@ -771,7 +771,7 @@
                 tracks.forEach(track => {
                     track.audio.currentTime = newTime;
                     
-                    // Actualizar la visualizaciÃ³n del waveform
+                    // Actualizar la visualización del waveform
                     if (track.waveformCanvas) {
                         drawWaveform(track, track.waveformCanvas);
                     }
@@ -810,7 +810,7 @@
             
             progressContainer.addEventListener('click', seekToPosition);
             
-            // Inicializar la aplicaciÃ³n
+            // Inicializar la aplicación
             initializeSongList();
         });
     </script>

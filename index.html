@@ -13,6 +13,9 @@
             --accent-color: #ff5500;
             --button-color: #424242;
             --slider-track: #5a5a5a;
+            --waveform-bg: #333333;
+            --waveform-color: #9e9e9e;
+            --waveform-progress: #ff7b3a;
         }
         
         body {
@@ -131,11 +134,31 @@
             background-color: var(--track-hover);
         }
         
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+        }
+        
         .track-title {
-            flex-grow: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        
+        .track-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .track-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .volume-slider {
@@ -144,6 +167,7 @@
             height: 5px;
             border-radius: 5px;
             background: var(--slider-track);
+            margin-left: auto;
         }
         
         .volume-slider::-webkit-slider-thumb {
@@ -163,19 +187,20 @@
             cursor: pointer;
             border: none;
         }
-
-        .track-controls {
-            display: flex;
-            gap: 8px;
+        
+        .waveform-container {
+            flex-grow: 1;
+            height: 60px;
+            background-color: var(--waveform-bg);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
         }
         
-        .track-button {
-            width: 36px;
-            height: 36px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .waveform-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
         
         .loading {
@@ -240,6 +265,15 @@
             let tracks = [];
             let isPlaying = false;
             let animationFrame = null;
+            let audioContext = null;
+            
+            // Inicializar el contexto de audio
+            function initAudioContext() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return audioContext;
+            }
             
             // Función para obtener la lista de archivos del repositorio
             async function fetchRepositoryFiles() {
@@ -316,8 +350,11 @@
                 }
             }
             
-            function loadSong(songName) {
+            async function loadSong(songName) {
                 if (!songName || !availableSongs[songName]) return;
+                
+                // Inicializar el contexto de audio si no existe
+                initAudioContext();
                 
                 // Detener la reproducción actual si existe
                 stopPlayback();
@@ -343,7 +380,9 @@
                             resolve({
                                 audio: audio,
                                 type: stem.type,
-                                file: stem.file
+                                file: stem.file,
+                                audioBuffer: null,
+                                waveformData: null
                             });
                         });
                         
@@ -359,37 +398,81 @@
                     });
                 });
                 
-                // Esperar a que todos los audios se carguen
-                Promise.all(audioPromises)
-                    .then(loadedTracks => {
-                        tracks = loadedTracks;
-                        
-                        // Mostrar la duración total
-                        if (tracks.length > 0) {
-                            const duration = tracks[0].audio.duration;
-                            totalTimeDisplay.textContent = formatTime(duration);
-                        }
-                        
-                        // Limpiar el contenedor
-                        tracksContainer.innerHTML = '';
-                        
-                        // Crear la interfaz para cada pista
-                        tracks.forEach((track, index) => {
-                            createTrackElement(track, index);
-                        });
-                    })
-                    .catch(error => {
-                        tracksContainer.innerHTML = `<div class="error-message">Error al cargar los stems: ${error.message}</div>`;
+                try {
+                    const loadedTracks = await Promise.all(audioPromises);
+                    tracks = loadedTracks;
+                    
+                    // Mostrar la duración total
+                    if (tracks.length > 0) {
+                        const duration = tracks[0].audio.duration;
+                        totalTimeDisplay.textContent = formatTime(duration);
+                    }
+                    
+                    // Limpiar el contenedor
+                    tracksContainer.innerHTML = '';
+                    
+                    // Cargar los datos para las formas de onda
+                    await Promise.all(tracks.map(loadWaveformData));
+                    
+                    // Crear la interfaz para cada pista
+                    tracks.forEach((track, index) => {
+                        createTrackElement(track, index);
                     });
+                } catch (error) {
+                    tracksContainer.innerHTML = `<div class="error-message">Error al cargar los stems: ${error.message}</div>`;
+                }
+            }
+            
+            async function loadWaveformData(track) {
+                try {
+                    const audioContext = initAudioContext();
+                    
+                    // Fetch the audio data
+                    const response = await fetch(track.audio.src);
+                    const arrayBuffer = await response.arrayBuffer();
+                    
+                    // Decode the audio data
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    track.audioBuffer = audioBuffer;
+                    
+                    // Generate waveform data
+                    track.waveformData = generateWaveformData(audioBuffer);
+                    
+                    return track;
+                } catch (error) {
+                    console.error('Error loading waveform data:', error);
+                    throw error;
+                }
+            }
+            
+            function generateWaveformData(audioBuffer) {
+                const channelData = audioBuffer.getChannelData(0);
+                const samples = 1000; // Número de muestras para la forma de onda
+                const blockSize = Math.floor(channelData.length / samples);
+                const waveformData = [];
+                
+                for (let i = 0; i < samples; i++) {
+                    let blockStart = blockSize * i;
+                    let sum = 0;
+                    
+                    for (let j = 0; j < blockSize; j++) {
+                        sum += Math.abs(channelData[blockStart + j]);
+                    }
+                    
+                    waveformData.push(sum / blockSize);
+                }
+                
+                // Normalizar los datos (0-1)
+                const multiplier = 1.0 / Math.max(...waveformData);
+                return waveformData.map(n => n * multiplier);
             }
             
             function createTrackElement(track, index) {
                 const trackElement = document.createElement('div');
                 trackElement.className = 'track';
                 
-                const trackTitle = document.createElement('div');
-                trackTitle.className = 'track-title';
-                trackTitle.textContent = track.type;
+                const trackInfo = document.createElement('div');
+                trackInfo.className = 'track-info';
                 
                 const trackControls = document.createElement('div');
                 trackControls.className = 'track-controls';
@@ -403,6 +486,11 @@
                     track.audio.muted = !isMuted;
                     muteBtn.dataset.muted = !isMuted;
                     muteBtn.innerHTML = !isMuted ? '🔇' : '🔊';
+                    
+                    // Actualizar la visualización del waveform
+                    if (track.waveformCanvas) {
+                        drawWaveform(track, track.waveformCanvas);
+                    }
                 });
                 
                 const soloBtn = document.createElement('button');
@@ -444,7 +532,54 @@
                             btn.innerHTML = '🔊';
                         });
                     }
+                    
+                    // Actualizar todas las visualizaciones de waveform
+                    tracks.forEach(t => {
+                        if (t.waveformCanvas) {
+                            drawWaveform(t, t.waveformCanvas);
+                        }
+                    });
                 });
+                
+                const trackTitle = document.createElement('div');
+                trackTitle.className = 'track-title';
+                trackTitle.textContent = track.type;
+                
+                // Añadir los controles al lado del título
+                trackControls.appendChild(muteBtn);
+                trackControls.appendChild(soloBtn);
+                trackInfo.appendChild(trackControls);
+                trackInfo.appendChild(trackTitle);
+                trackElement.appendChild(trackInfo);
+                
+                // Crear el contenedor para la forma de onda
+                const waveformContainer = document.createElement('div');
+                waveformContainer.className = 'waveform-container';
+                
+                // Crear el canvas para la forma de onda
+                const waveformCanvas = document.createElement('canvas');
+                waveformCanvas.className = 'waveform-canvas';
+                waveformCanvas.width = waveformContainer.clientWidth || 800;
+                waveformCanvas.height = 60;
+                waveformContainer.appendChild(waveformCanvas);
+                
+                // Guardar referencia al canvas en el objeto track
+                track.waveformCanvas = waveformCanvas;
+                
+                // Dibujar la forma de onda inicial
+                if (track.waveformData) {
+                    drawWaveform(track, waveformCanvas);
+                }
+                
+                // Agregar evento para redibujar cuando cambie el tamaño
+                window.addEventListener('resize', () => {
+                    waveformCanvas.width = waveformContainer.clientWidth;
+                    if (track.waveformData) {
+                        drawWaveform(track, waveformCanvas);
+                    }
+                });
+                
+                trackElement.appendChild(waveformContainer);
                 
                 const volumeSlider = document.createElement('input');
                 volumeSlider.type = 'range';
@@ -457,17 +592,69 @@
                     track.audio.volume = volumeSlider.value;
                 });
                 
-                trackControls.appendChild(muteBtn);
-                trackControls.appendChild(soloBtn);
-                trackElement.appendChild(trackTitle);
                 trackElement.appendChild(volumeSlider);
-                trackElement.appendChild(trackControls);
-                
                 tracksContainer.appendChild(trackElement);
+                
+                // Ajustar el ancho del canvas después de que se haya añadido al DOM
+                setTimeout(() => {
+                    waveformCanvas.width = waveformContainer.clientWidth;
+                    if (track.waveformData) {
+                        drawWaveform(track, waveformCanvas);
+                    }
+                }, 0);
+            }
+            
+            function drawWaveform(track, canvas) {
+                if (!track.waveformData || !canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Limpiar el canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                const data = track.waveformData;
+                const step = Math.ceil(data.length / width);
+                const amp = height / 2;
+                
+                ctx.fillStyle = track.audio.muted ? 'rgba(158, 158, 158, 0.3)' : 'var(--waveform-color)';
+                
+                for (let i = 0; i < width; i++) {
+                    const dataIndex = Math.min(Math.floor(i * step), data.length - 1);
+                    const value = data[dataIndex] * amp;
+                    
+                    // Dibujar la forma de onda centrada verticalmente
+                    ctx.fillRect(i, (height / 2) - value, 1, value * 2);
+                }
+                
+                // Dibujar la posición actual de reproducción
+                if (isPlaying && track.audio.duration > 0) {
+                    const playbackPosition = track.audio.currentTime / track.audio.duration;
+                    const lineX = Math.floor(playbackPosition * width);
+                    
+                    ctx.fillStyle = 'var(--accent-color)';
+                    ctx.fillRect(0, 0, lineX, height);
+                    
+                    // Dibujar de nuevo la forma de onda para la parte reproducida con otro color
+                    ctx.fillStyle = track.audio.muted ? 'rgba(255, 123, 58, 0.3)' : 'var(--waveform-progress)';
+                    
+                    for (let i = 0; i < lineX; i++) {
+                        const dataIndex = Math.min(Math.floor(i * step), data.length - 1);
+                        const value = data[dataIndex] * amp;
+                        
+                        ctx.fillRect(i, (height / 2) - value, 1, value * 2);
+                    }
+                }
             }
             
             function startPlayback() {
                 if (!tracks.length || isPlaying) return;
+                
+                // Asegurarse de que el contexto de audio está activo
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 
                 const currentTime = tracks[0].audio.currentTime || 0;
                 
@@ -512,6 +699,11 @@
                 
                 tracks.forEach(track => {
                     track.audio.currentTime = 0;
+                    
+                    // Actualizar la visualización del waveform
+                    if (track.waveformCanvas) {
+                        drawWaveform(track, track.waveformCanvas);
+                    }
                 });
                 
                 currentTimeDisplay.textContent = formatTime(0);
@@ -530,6 +722,13 @@
                     if (duration > 0) {
                         const percentage = (currentTime / duration) * 100;
                         progressBar.style.width = `${percentage}%`;
+                        
+                        // Actualizar las visualizaciones de waveform
+                        tracks.forEach(track => {
+                            if (track.waveformCanvas) {
+                                drawWaveform(track, track.waveformCanvas);
+                            }
+                        });
                     }
                     
                     // Verificar si la reproducción ha terminado
@@ -553,6 +752,11 @@
                 
                 tracks.forEach(track => {
                     track.audio.currentTime = newTime;
+                    
+                    // Actualizar la visualización del waveform
+                    if (track.waveformCanvas) {
+                        drawWaveform(track, track.waveformCanvas);
+                    }
                 });
                 
                 currentTimeDisplay.textContent = formatTime(newTime);

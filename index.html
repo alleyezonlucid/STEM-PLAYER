@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor de Stems</title>
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reproductor de Stems</title>
+<style>
         :root {
             --bg-color: #1e1e1e;
             --track-bg: #2d2d2d;
@@ -161,36 +162,11 @@
             justify-content: center;
         }
         
-        .volume-slider {
-            width: 100px;
-            -webkit-appearance: none;
-            height: 5px;
-            border-radius: 5px;
-            background: var(--slider-track);
-            margin-left: auto;
-        }
         
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: var(--text-color);
-            cursor: pointer;
-        }
-        
-        .volume-slider::-moz-range-thumb {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: var(--text-color);
-            cursor: pointer;
-            border: none;
-        }
         
         .waveform-container {
             flex-grow: 1;
-            height: 60px;
+            height: 80px;
             background-color: var(--waveform-bg);
             border-radius: 4px;
             position: relative;
@@ -220,31 +196,27 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="song-selector">
-            <select id="song-select">
-                <option value="">Seleccionar canción</option>
-            </select>
-        </div>
-        
-        <div class="transport-controls">
-            <button id="play-btn">▶ Reproducir</button>
-            <button id="stop-btn">■ Detener</button>
-            <div class="time-display">
-                <span id="current-time">00:00.000</span> / <span id="total-time">00:00.000</span>
-            </div>
-        </div>
-        
-        <div class="progress-container" id="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
-        </div>
-        
-        <div class="tracks-container" id="tracks-container">
-            <div class="loading">Cargando lista de canciones...</div>
-        </div>
-    </div>
-
-    <script>
+<div class="container">
+<div class="song-selector">
+<select id="song-select">
+<option value="">Seleccionar canción</option>
+</select>
+</div>
+<div class="transport-controls">
+<button id="play-btn">▶ Reproducir</button>
+<button id="stop-btn">■ Detener</button>
+<div class="time-display">
+<span id="current-time">00:00.000</span> / <span id="total-time">00:00.000</span>
+</div>
+</div>
+<div class="progress-container" id="progress-container">
+<div class="progress-bar" id="progress-bar"></div>
+</div>
+<div class="tracks-container" id="tracks-container">
+<div class="loading">Cargando lista de canciones...</div>
+</div>
+</div>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             const repoOwner = 'alleyezonlucid';
             const repoName = 'STEM-PLAYER';

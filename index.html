@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STEM PLAYER</title>
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <style>
+    :root {
+      --main-bg: #1e1e1e;
+      --track-bg: #2a2a2a;
+      --accent-color: #ff5500;
+      --text-color: #e0e0e0;
+      --waveform-bg: #3a3a3a;
+      --waveform-progress: #ff5500;
+      --button-hover: #ff7730;
+    }
+    
+    body {
+      background-color: var(--main-bg);
+      color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 10px;
+      background-color: var(--track-bg);
+      border-radius: 5px;
+    }
+    
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .song-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    #songInput {
+      padding: 8px;
+      background-color: var(--track-bg);
+      color: var(--text-color);
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    
+    .main-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .main-controls button {
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .main-controls button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    .track-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .track {
+      background-color: var(--track-bg);
+      padding: 15px;
+      border-radius: 5px;
+    }
+    
+    .track-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .track-name {
+      font-size: 16px;
+      margin: 0;
+      font-weight: bold;
+    }
+    
+    .track-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .waveform-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .waveform {
+      flex-grow: 1;
+      height: 70px;
+      background-color: var(--waveform-bg);
+      border-radius: 3px;
+    }
+    
+    .volume-slider {
+      width: 80px;
+      margin-left: 10px;
+    }
+    
+    .mute-btn {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .mute-btn.muted {
+      background-color: #555;
+    }
+    
+    .time-display {
+      margin-top: 10px;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="title">STEM PLAYER</h1>
+    <div class="song-selector">
+      <label for="songInput">Canción:</label>
+      <input type="text" id="songInput" placeholder="Nombre de la canción" value="CHICLE">
+      <button onclick="loadSong()">Cargar</button>
+    </div>
+  </div>
+  
+  <div class="main-controls">
+    <button id="playPauseBtn" onclick="togglePlayPause()">▶️ PLAY</button>
+    <button id="stopBtn" onclick="stopAll()">⏹️ STOP</button>
+  </div>
+  
+  <div class="time-display">
+    <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+  </div>
+  
+  <div class="track-container">
+    <div class="track" id="melody-track">
+      <div class="track-header">
+        <h3 class="track-name">MELODÍA</h3>
+        <div class="track-controls">
+          <button class="mute-btn" id="mute-melody" onclick="toggleMute('melody')">🔊</button>
+          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-melody" oninput="changeVolume('melody', this.value)">
+        </div>
+      </div>
+      <div class="waveform-container">
+        <div class="waveform" id="waveform-melody"></div>
+      </div>
+    </div>
+    
+    <div class="track" id="drums-track">
+      <div class="track-header">
+        <h3 class="track-name">DRUMS</h3>
+        <div class="track-controls">
+          <button class="mute-btn" id="mute-drums" onclick="toggleMute('drums')">🔊</button>
+          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-drums" oninput="changeVolume('drums', this.value)">
+        </div>
+      </div>
+      <div class="waveform-container">
+        <div class="waveform" id="waveform-drums"></div>
+      </div>
+    </div>
+    
+    <div class="track" id="bass-track">
+      <div class="track-header">
+        <h3 class="track-name">BASS</h3>
+        <div class="track-controls">
+          <button class="mute-btn" id="mute-bass" onclick="toggleMute('bass')">🔊</button>
+          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-bass" oninput="changeVolume('bass', this.value)">
+        </div>
+      </div>
+      <div class="waveform-container">
+        <div class="waveform" id="waveform-bass"></div>
+      </div>
+    </div>
+    
+    <div class="track" id="vox-track">
+      <div class="track-header">
+        <h3 class="track-name">VOX</h3>
+        <div class="track-controls">
+          <button class="mute-btn" id="mute-vox" onclick="toggleMute('vox')">🔊</button>
+          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-vox" oninput="changeVolume('vox', this.value)">
+        </div>
+      </div>
+      <div class="waveform-container">
+        <div class="waveform" id="waveform-vox"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Variables globales
+    const players = {
+      melody: null,
+      drums: null,
+      bass: null,
+      vox: null
+    };
+    
+    let isPlaying = false;
+    let currentSong = "CHICLE";
+    
+    // Estado de mute para cada pista
+    const muteState = {
+      melody: false,
+      drums: false,
+      bass: false,
+      vox: false
+    };
+    
+    // Volumen para cada pista
+    const volumeState = {
+      melody: 1,
+      drums: 1,
+      bass: 1,
+      vox: 1
+    };
+    
+    // Formato de tiempo (segundos a MM:SS)
+    function formatTime(seconds) {
+      seconds = Math.floor(seconds);
+      const minutes = Math.floor(seconds / 60);
+      seconds = seconds % 60;
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+    
+    // Actualizar display de tiempo
+    function updateTimeDisplay() {
+      if (!players.melody || !players.melody.isReady) return;
+      
+      const currentTime = players.melody.getCurrentTime();
+      const duration = players.melody.getDuration();
+      
+      document.getElementById('currentTime').textContent = formatTime(currentTime);
+      document.getElementById('totalTime').textContent = formatTime(duration);
+    }
+    
+    // Cargar la canción
+    function loadSong() {
+      // Detener cualquier reproducción en curso
+      stopAll();
+      
+      // Obtener el nombre de la canción
+      currentSong = document.getElementById('songInput').value.trim();
+      if (!currentSong) {
+        alert('Por favor, introduce el nombre de la canción');
+        return;
+      }
+      
+      // Destruir los reproductores existentes si existen
+      Object.entries(players).forEach(([id, player]) => {
+        if (player) {
+          player.destroy();
+          players[id] = null;
+        }
+      });
+      
+      // Crear cada reproductor con los nuevos archivos
+      players.melody = WaveSurfer.create({
+        container: '#waveform-melody',
+        waveColor: '#666',
+        progressColor: var(--waveform-progress),
+        url: `${currentSong}_MELODIA.mp3`
+      });
+      
+      players.drums = WaveSurfer.create({
+        container: '#waveform-drums',
+        waveColor: '#666',
+        progressColor: var(--waveform-progress),
+        url: `${currentSong}_DRUMS.mp3`
+      });
+      
+      players.bass = WaveSurfer.create({
+        container: '#waveform-bass',
+        waveColor: '#666',
+        progressColor: var(--waveform-progress),
+        url: `${currentSong}_BASS.mp3`
+      });
+      
+      players.vox = WaveSurfer.create({
+        container: '#waveform-vox',
+        waveColor: '#666',
+        progressColor: var(--waveform-progress),
+        url: `${currentSong}_VOX.mp3`
+      });
+      
+      // Configurar eventos para cada reproductor
+      Object.entries(players).forEach(([id, player]) => {
+        // Cuando termine un track, detener todos
+        player.on('finish', function() {
+          pauseAll();
+          isPlaying = false;
+          updatePlayPauseButton();
+        });
+        
+        // Sincronizar la posición de reproducción
+        player.on('seek', function(position) {
+          syncSeekPosition(id, position);
+        });
+        
+        // Actualizar el tiempo de reproducción
+        player.on('audioprocess', updateTimeDisplay);
+        
+        // Al cargar, restaurar el estado de mute y volumen
+        player.on('ready', function() {
+          player.setMute(muteState[id]);
+          player.setVolume(volumeState[id]);
+          
+          if (id === 'melody') {
+            updateTimeDisplay();
+          }
+        });
+        
+        // Manejar errores de carga
+        player.on('error', function(err) {
+          console.error(`Error al cargar ${id} para la canción ${currentSong}:`, err);
+        });
+      });
+    }
+    
+    // Inicializar cuando se carga la página
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSong();
+    });
+    
+    // Función para sincronizar la posición de reproducción
+    function syncSeekPosition(sourceId, position) {
+      Object.entries(players).forEach(([id, player]) => {
+        if (id !== sourceId && player && player.isReady) {
+          player.seekTo(position);
+        }
+      });
+    }
+    
+    // Función para activar/desactivar el mute de una pista
+    function toggleMute(id) {
+      if (!players[id] || !players[id].isReady) return;
+      
+      muteState[id] = !muteState[id];
+      players[id].setMute(muteState[id]);
+      
+      // Actualizar el botón
+      const muteBtn = document.getElementById(`mute-${id}`);
+      if (muteState[id]) {
+        muteBtn.textContent = '🔇';
+        muteBtn.classList.add('muted');
+      } else {
+        muteBtn.textContent = '🔊';
+        muteBtn.classList.remove('muted');
+      }
+    }
+    
+    // Función para cambiar el volumen de una pista
+    function changeVolume(id, value) {
+      if (!players[id] || !players[id].isReady) return;
+      
+      const volume = value / 100;
+      volumeState[id] = volume;
+      players[id].setVolume(volume);
+    }
+    
+    // Función para reproducir o pausar todas las pistas
+    function togglePlayPause() {
+      if (isPlaying) {
+        pauseAll();
+      } else {
+        playAll();
+      }
+      
+      isPlaying = !isPlaying;
+      updatePlayPauseButton();
+    }
+    
+    // Detener toda la reproducción y volver al inicio
+    function stopAll() {
+      pauseAll();
+      
+      Object.values(players).forEach(player => {
+        if (player && player.isReady) {
+          player.seekTo(0);
+        }
+      });
+      
+      isPlaying = false;
+      updatePlayPauseButton();
+      updateTimeDisplay();
+    }
+    
+    // Actualizar el botón de reproducción/pausa
+    function updatePlayPauseButton() {
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      playPauseBtn.textContent = isPlaying ? '⏸️ PAUSE' : '▶️ PLAY';
+    }
+    
+    // Función para reproducir todas las pistas
+    function playAll() {
+      Object.values(players).forEach(player => {
+        if (player && player.isReady) {
+          player.play();
+        }
+      });
+    }
+    
+    // Función para pausar todas las pistas
+    function pauseAll() {
+      Object.values(players).forEach(player => {
+        if (player && player.isReady) {
+          player.pause();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -186,6 +186,12 @@
             font-size: 16px;
             color: var(--text-color);
         }
+        
+        .error-message {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -209,7 +215,7 @@
         </div>
         
         <div class="tracks-container" id="tracks-container">
-            <div class="loading">Selecciona una canción para cargar sus stems</div>
+            <div class="loading">Cargando lista de canciones...</div>
         </div>
     </div>
 
@@ -233,7 +239,6 @@
             let currentSong = null;
             let tracks = [];
             let isPlaying = false;
-            let startTime = 0;
             let animationFrame = null;
             
             // Función para obtener la lista de archivos del repositorio
@@ -242,37 +247,18 @@
                     const response = await fetch(apiUrl);
                     
                     if (!response.ok) {
-                        // Si la API de GitHub falla, usamos datos de muestra reales
-                        console.warn('No se pudo acceder a la API de GitHub. Usando datos de muestra.');
-                        return [
-                            "CHICLE_DRUMS.mp3",
-                            "CHICLE_MELODIA.mp3",
-                            "CHICLE_BASS.mp3",
-                            "FREESTYLE_DRUMS.mp3",
-                            "FREESTYLE_BASS.mp3", 
-                            "FREESTYLE_MELODIA.mp3"
-                        ];
+                        throw new Error(`Error HTTP: ${response.status}`);
                     }
                     
                     const data = await response.json();
                     
                     // Filtrar solo archivos MP3
                     return data
-                        .filter(item => item.type === 'file' && item.name.endsWith('.mp3'))
+                        .filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.mp3'))
                         .map(item => item.name);
                 } catch (error) {
                     console.error('Error al obtener archivos:', error);
-                    
-                    // Usar datos de muestra en caso de error
-                    console.warn('Usando datos de muestra debido a un error.');
-                    return [
-                        "CHICLE_DRUMS.mp3",
-                        "CHICLE_MELODIA.mp3",
-                        "CHICLE_BASS.mp3",
-                        "FREESTYLE_DRUMS.mp3",
-                        "FREESTYLE_BASS.mp3",
-                        "FREESTYLE_MELODIA.mp3"
-                    ];
+                    throw error;
                 }
             }
             
@@ -280,10 +266,10 @@
                 const songMap = {};
                 
                 files.forEach(file => {
-                    if (file.includes('_') && file.endsWith('.mp3')) {
+                    if (file.includes('_') && file.toLowerCase().endsWith('.mp3')) {
                         const parts = file.split('_');
                         const songName = parts[0];
-                        const stemType = parts[1].replace('.mp3', '');
+                        const stemType = parts[1].replace(/\.mp3$/i, '');
                         
                         if (!songMap[songName]) {
                             songMap[songName] = [];
@@ -300,25 +286,34 @@
             }
             
             async function initializeSongList() {
-                tracksContainer.innerHTML = '<div class="loading">Obteniendo lista de canciones...</div>';
+                tracksContainer.innerHTML = '<div class="loading">Obteniendo lista de canciones desde GitHub...</div>';
                 
-                const files = await fetchRepositoryFiles();
-                const songs = extractSongNames(files);
-                
-                // Limpiamos el select
-                songSelect.innerHTML = '<option value="">Seleccionar canción</option>';
-                
-                // Agregamos las canciones disponibles
-                Object.keys(songs).forEach(songName => {
-                    const option = document.createElement('option');
-                    option.value = songName;
-                    option.textContent = songName;
-                    songSelect.appendChild(option);
-                });
-                
-                availableSongs = songs;
-                
-                tracksContainer.innerHTML = '<div class="loading">Selecciona una canción para cargar sus stems</div>';
+                try {
+                    const files = await fetchRepositoryFiles();
+                    const songs = extractSongNames(files);
+                    
+                    // Limpiamos el select
+                    songSelect.innerHTML = '<option value="">Seleccionar canción</option>';
+                    
+                    if (Object.keys(songs).length === 0) {
+                        tracksContainer.innerHTML = '<div class="error-message">No se encontraron canciones con el formato correcto en el repositorio.</div>';
+                        return;
+                    }
+                    
+                    // Agregamos las canciones disponibles
+                    Object.keys(songs).forEach(songName => {
+                        const option = document.createElement('option');
+                        option.value = songName;
+                        option.textContent = songName;
+                        songSelect.appendChild(option);
+                    });
+                    
+                    availableSongs = songs;
+                    
+                    tracksContainer.innerHTML = '<div class="loading">Selecciona una canción para cargar sus stems</div>';
+                } catch (error) {
+                    tracksContainer.innerHTML = `<div class="error-message">Error al obtener archivos del repositorio: ${error.message}</div>`;
+                }
             }
             
             function loadSong(songName) {
@@ -335,7 +330,7 @@
                 tracksContainer.innerHTML = '';
                 
                 // Mensaje de carga
-                tracksContainer.innerHTML = '<div class="loading">Cargando stems...</div>';
+                tracksContainer.innerHTML = `<div class="loading">Cargando ${stemFiles.length} stems para ${songName}...</div>`;
                 
                 // Crear un elemento de audio para cada stem
                 const audioPromises = stemFiles.map(stem => {
@@ -356,6 +351,11 @@
                             console.error(`Error cargando ${stem.file}`);
                             reject(new Error(`Error cargando ${stem.file}`));
                         });
+                        
+                        // Timeout para evitar bloqueos infinitos
+                        setTimeout(() => {
+                            reject(new Error(`Tiempo de espera agotado para ${stem.file}`));
+                        }, 15000);
                     });
                 });
                 
@@ -375,108 +375,120 @@
                         
                         // Crear la interfaz para cada pista
                         tracks.forEach((track, index) => {
-                            const trackElement = document.createElement('div');
-                            trackElement.className = 'track';
-                            
-                            const trackTitle = document.createElement('div');
-                            trackTitle.className = 'track-title';
-                            trackTitle.textContent = track.type;
-                            
-                            const trackControls = document.createElement('div');
-                            trackControls.className = 'track-controls';
-                            
-                            const muteBtn = document.createElement('button');
-                            muteBtn.className = 'track-button mute-btn';
-                            muteBtn.innerHTML = '🔊';
-                            muteBtn.dataset.muted = 'false';
-                            muteBtn.addEventListener('click', () => {
-                                const isMuted = muteBtn.dataset.muted === 'true';
-                                track.audio.muted = !isMuted;
-                                muteBtn.dataset.muted = !isMuted;
-                                muteBtn.innerHTML = !isMuted ? '🔇' : '🔊';
-                            });
-                            
-                            const soloBtn = document.createElement('button');
-                            soloBtn.className = 'track-button solo-btn';
-                            soloBtn.innerHTML = 'S';
-                            soloBtn.dataset.solo = 'false';
-                            soloBtn.addEventListener('click', () => {
-                                const isSolo = soloBtn.dataset.solo === 'true';
-                                
-                                // Desactivamos todos los solos primero
-                                document.querySelectorAll('.solo-btn').forEach(btn => {
-                                    btn.dataset.solo = 'false';
-                                    btn.classList.remove('active');
-                                });
-                                
-                                if (!isSolo) {
-                                    soloBtn.dataset.solo = 'true';
-                                    soloBtn.classList.add('active');
-                                    
-                                    // Silenciar todas las pistas excepto esta
-                                    tracks.forEach((t, i) => {
-                                        if (i === index) {
-                                            t.audio.muted = false;
-                                            trackControls.querySelector('.mute-btn').dataset.muted = 'false';
-                                            trackControls.querySelector('.mute-btn').innerHTML = '🔊';
-                                        } else {
-                                            t.audio.muted = true;
-                                        }
-                                    });
-                                } else {
-                                    // Restaurar todas las pistas a su estado no silenciado
-                                    tracks.forEach(t => {
-                                        t.audio.muted = false;
-                                    });
-                                    
-                                    // Restaurar iconos de mute
-                                    document.querySelectorAll('.mute-btn').forEach(btn => {
-                                        btn.dataset.muted = 'false';
-                                        btn.innerHTML = '🔊';
-                                    });
-                                }
-                            });
-                            
-                            const volumeSlider = document.createElement('input');
-                            volumeSlider.type = 'range';
-                            volumeSlider.className = 'volume-slider';
-                            volumeSlider.min = 0;
-                            volumeSlider.max = 1;
-                            volumeSlider.step = 0.01;
-                            volumeSlider.value = 1;
-                            volumeSlider.addEventListener('input', () => {
-                                track.audio.volume = volumeSlider.value;
-                            });
-                            
-                            trackControls.appendChild(muteBtn);
-                            trackControls.appendChild(soloBtn);
-                            trackElement.appendChild(trackTitle);
-                            trackElement.appendChild(volumeSlider);
-                            trackElement.appendChild(trackControls);
-                            
-                            tracksContainer.appendChild(trackElement);
+                            createTrackElement(track, index);
                         });
                     })
                     .catch(error => {
-                        tracksContainer.innerHTML = `<div class="loading">Error al cargar los stems: ${error.message}</div>`;
+                        tracksContainer.innerHTML = `<div class="error-message">Error al cargar los stems: ${error.message}</div>`;
                     });
+            }
+            
+            function createTrackElement(track, index) {
+                const trackElement = document.createElement('div');
+                trackElement.className = 'track';
+                
+                const trackTitle = document.createElement('div');
+                trackTitle.className = 'track-title';
+                trackTitle.textContent = track.type;
+                
+                const trackControls = document.createElement('div');
+                trackControls.className = 'track-controls';
+                
+                const muteBtn = document.createElement('button');
+                muteBtn.className = 'track-button mute-btn';
+                muteBtn.innerHTML = '🔊';
+                muteBtn.dataset.muted = 'false';
+                muteBtn.addEventListener('click', () => {
+                    const isMuted = muteBtn.dataset.muted === 'true';
+                    track.audio.muted = !isMuted;
+                    muteBtn.dataset.muted = !isMuted;
+                    muteBtn.innerHTML = !isMuted ? '🔇' : '🔊';
+                });
+                
+                const soloBtn = document.createElement('button');
+                soloBtn.className = 'track-button solo-btn';
+                soloBtn.innerHTML = 'S';
+                soloBtn.dataset.solo = 'false';
+                soloBtn.addEventListener('click', () => {
+                    const isSolo = soloBtn.dataset.solo === 'true';
+                    
+                    // Desactivamos todos los solos primero
+                    document.querySelectorAll('.solo-btn').forEach(btn => {
+                        btn.dataset.solo = 'false';
+                        btn.classList.remove('active');
+                    });
+                    
+                    if (!isSolo) {
+                        soloBtn.dataset.solo = 'true';
+                        soloBtn.classList.add('active');
+                        
+                        // Silenciar todas las pistas excepto esta
+                        tracks.forEach((t, i) => {
+                            if (i === index) {
+                                t.audio.muted = false;
+                                document.querySelectorAll('.track')[i].querySelector('.mute-btn').dataset.muted = 'false';
+                                document.querySelectorAll('.track')[i].querySelector('.mute-btn').innerHTML = '🔊';
+                            } else {
+                                t.audio.muted = true;
+                            }
+                        });
+                    } else {
+                        // Restaurar todas las pistas a su estado no silenciado
+                        tracks.forEach(t => {
+                            t.audio.muted = false;
+                        });
+                        
+                        // Restaurar iconos de mute
+                        document.querySelectorAll('.mute-btn').forEach(btn => {
+                            btn.dataset.muted = 'false';
+                            btn.innerHTML = '🔊';
+                        });
+                    }
+                });
+                
+                const volumeSlider = document.createElement('input');
+                volumeSlider.type = 'range';
+                volumeSlider.className = 'volume-slider';
+                volumeSlider.min = 0;
+                volumeSlider.max = 1;
+                volumeSlider.step = 0.01;
+                volumeSlider.value = 1;
+                volumeSlider.addEventListener('input', () => {
+                    track.audio.volume = volumeSlider.value;
+                });
+                
+                trackControls.appendChild(muteBtn);
+                trackControls.appendChild(soloBtn);
+                trackElement.appendChild(trackTitle);
+                trackElement.appendChild(volumeSlider);
+                trackElement.appendChild(trackControls);
+                
+                tracksContainer.appendChild(trackElement);
             }
             
             function startPlayback() {
                 if (!tracks.length || isPlaying) return;
                 
+                const currentTime = tracks[0].audio.currentTime || 0;
+                
                 // Configurar todos los tracks para reproducción sincronizada
-                tracks.forEach(track => {
-                    track.audio.currentTime = 0;
-                    track.audio.play();
+                const playPromises = tracks.map(track => {
+                    track.audio.currentTime = currentTime;
+                    return track.audio.play();
                 });
                 
-                isPlaying = true;
-                startTime = Date.now();
-                playBtn.textContent = "⏸️ Pausar";
-                
-                // Iniciar la actualización de la interfaz
-                updatePlaybackUI();
+                Promise.all(playPromises)
+                    .then(() => {
+                        isPlaying = true;
+                        playBtn.textContent = "⏸️ Pausar";
+                        
+                        // Iniciar la actualización de la interfaz
+                        updatePlaybackUI();
+                    })
+                    .catch(error => {
+                        console.error('Error al reproducir:', error);
+                        alert('Error al iniciar la reproducción. Puede que el navegador bloquee la reproducción automática.');
+                    });
             }
             
             function pausePlayback() {
@@ -521,7 +533,7 @@
                     }
                     
                     // Verificar si la reproducción ha terminado
-                    if (currentTime >= duration) {
+                    if (currentTime >= duration - 0.1) {
                         stopPlayback();
                         return;
                     }

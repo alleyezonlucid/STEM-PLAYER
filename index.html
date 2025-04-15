@@ -215,8 +215,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const repoUrl = 'https://github.com/alleyezonlucid/STEM-PLAYER';
-            const rawBaseUrl = 'https://raw.githubusercontent.com/alleyezonlucid/STEM-PLAYER/main/';
+            const repoOwner = 'alleyezonlucid';
+            const repoName = 'STEM-PLAYER';
+            const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/`;
+            const rawBaseUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/`;
             
             const songSelect = document.getElementById('song-select');
             const playBtn = document.getElementById('play-btn');
@@ -227,29 +229,51 @@
             const progressContainer = document.getElementById('progress-container');
             const tracksContainer = document.getElementById('tracks-container');
             
-            let availableSongs = [];
+            let availableSongs = {};
             let currentSong = null;
             let tracks = [];
             let isPlaying = false;
             let startTime = 0;
             let animationFrame = null;
             
-            // Función simulada para obtener la lista de archivos (en una implementación real, esto necesitaría una API)
+            // Función para obtener la lista de archivos del repositorio
             async function fetchRepositoryFiles() {
-                // En una implementación real, esto utilizaría la API de GitHub o un sistema de backend
-                // Para este ejemplo, vamos a simular con algunos datos de muestra
-                
-                // Simulando datos de ejemplo
-                return [
-                    "CHICLE_DRUMS.mp3",
-                    "CHICLE_BASS.mp3",
-                    "CHICLE_SYNTH.mp3",
-                    "CHICLE_VOCALS.mp3",
-                    "FREESTYLE_DRUMS.mp3",
-                    "FREESTYLE_BASS.mp3",
-                    "FREESTYLE_KEYS.mp3",
-                    "FREESTYLE_VOCALS.mp3"
-                ];
+                try {
+                    const response = await fetch(apiUrl);
+                    
+                    if (!response.ok) {
+                        // Si la API de GitHub falla, usamos datos de muestra reales
+                        console.warn('No se pudo acceder a la API de GitHub. Usando datos de muestra.');
+                        return [
+                            "CHICLE_DRUMS.mp3",
+                            "CHICLE_MELODIA.mp3",
+                            "CHICLE_BASS.mp3",
+                            "FREESTYLE_DRUMS.mp3",
+                            "FREESTYLE_BASS.mp3", 
+                            "FREESTYLE_MELODIA.mp3"
+                        ];
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Filtrar solo archivos MP3
+                    return data
+                        .filter(item => item.type === 'file' && item.name.endsWith('.mp3'))
+                        .map(item => item.name);
+                } catch (error) {
+                    console.error('Error al obtener archivos:', error);
+                    
+                    // Usar datos de muestra en caso de error
+                    console.warn('Usando datos de muestra debido a un error.');
+                    return [
+                        "CHICLE_DRUMS.mp3",
+                        "CHICLE_MELODIA.mp3",
+                        "CHICLE_BASS.mp3",
+                        "FREESTYLE_DRUMS.mp3",
+                        "FREESTYLE_BASS.mp3",
+                        "FREESTYLE_MELODIA.mp3"
+                    ];
+                }
             }
             
             function extractSongNames(files) {
@@ -276,6 +300,8 @@
             }
             
             async function initializeSongList() {
+                tracksContainer.innerHTML = '<div class="loading">Obteniendo lista de canciones...</div>';
+                
                 const files = await fetchRepositoryFiles();
                 const songs = extractSongNames(files);
                 
@@ -291,6 +317,8 @@
                 });
                 
                 availableSongs = songs;
+                
+                tracksContainer.innerHTML = '<div class="loading">Selecciona una canción para cargar sus stems</div>';
             }
             
             function loadSong(songName) {

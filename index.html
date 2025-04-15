@@ -1,450 +1,556 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STEM PLAYER</title>
-  <script src="https://unpkg.com/wavesurfer.js"></script>
-  <style>
-    :root {
-      --main-bg: #1e1e1e;
-      --track-bg: #2a2a2a;
-      --accent-color: #ff5500;
-      --text-color: #e0e0e0;
-      --waveform-bg: #3a3a3a;
-      --waveform-progress: #ff5500;
-      --button-hover: #ff7730;
-    }
-    
-    body {
-      background-color: var(--main-bg);
-      color: var(--text-color);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding: 10px;
-      background-color: var(--track-bg);
-      border-radius: 5px;
-    }
-    
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0;
-    }
-    
-    .song-selector {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    #songInput {
-      padding: 8px;
-      background-color: var(--track-bg);
-      color: var(--text-color);
-      border: 1px solid #444;
-      border-radius: 4px;
-    }
-    
-    .main-controls {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    
-    .main-controls button {
-      padding: 10px 20px;
-      font-size: 1em;
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    
-    .main-controls button:hover {
-      background-color: var(--button-hover);
-    }
-    
-    .track-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    
-    .track {
-      background-color: var(--track-bg);
-      padding: 15px;
-      border-radius: 5px;
-    }
-    
-    .track-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    
-    .track-name {
-      font-size: 16px;
-      margin: 0;
-      font-weight: bold;
-    }
-    
-    .track-controls {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .waveform-container {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    .waveform {
-      flex-grow: 1;
-      height: 70px;
-      background-color: var(--waveform-bg);
-      border-radius: 3px;
-    }
-    
-    .volume-slider {
-      width: 80px;
-      margin-left: 10px;
-    }
-    
-    .mute-btn {
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .mute-btn.muted {
-      background-color: #555;
-    }
-    
-    .time-display {
-      margin-top: 10px;
-      font-size: 0.9em;
-      text-align: center;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor de Stems</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --track-bg: #2d2d2d;
+            --track-hover: #3a3a3a;
+            --text-color: #e0e0e0;
+            --accent-color: #ff5500;
+            --button-color: #424242;
+            --slider-track: #5a5a5a;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .song-selector {
+            margin-bottom: 20px;
+        }
+        
+        select {
+            background-color: var(--button-color);
+            color: var(--text-color);
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            width: 250px;
+        }
+        
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+        
+        .transport-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background-color: var(--button-color);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--track-hover);
+        }
+        
+        button.active {
+            background-color: var(--accent-color);
+        }
+        
+        .time-display {
+            font-family: monospace;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--slider-track);
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 5px;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        .tracks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        
+        .track {
+            background-color: var(--track-bg);
+            border-radius: 4px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .track:hover {
+            background-color: var(--track-hover);
+        }
+        
+        .track-title {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .volume-slider {
+            width: 100px;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 5px;
+            background: var(--slider-track);
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+            border: none;
+        }
+
+        .track-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .track-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <h1 class="title">STEM PLAYER</h1>
-    <div class="song-selector">
-      <label for="songInput">Canción:</label>
-      <input type="text" id="songInput" placeholder="Nombre de la canción" value="CHICLE">
-      <button onclick="loadSong()">Cargar</button>
-    </div>
-  </div>
-  
-  <div class="main-controls">
-    <button id="playPauseBtn" onclick="togglePlayPause()">▶️ PLAY</button>
-    <button id="stopBtn" onclick="stopAll()">⏹️ STOP</button>
-  </div>
-  
-  <div class="time-display">
-    <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
-  </div>
-  
-  <div class="track-container">
-    <div class="track" id="melody-track">
-      <div class="track-header">
-        <h3 class="track-name">MELODÍA</h3>
-        <div class="track-controls">
-          <button class="mute-btn" id="mute-melody" onclick="toggleMute('melody')">🔊</button>
-          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-melody" oninput="changeVolume('melody', this.value)">
+    <div class="container">
+        <div class="song-selector">
+            <select id="song-select">
+                <option value="">Seleccionar canción</option>
+            </select>
         </div>
-      </div>
-      <div class="waveform-container">
-        <div class="waveform" id="waveform-melody"></div>
-      </div>
-    </div>
-    
-    <div class="track" id="drums-track">
-      <div class="track-header">
-        <h3 class="track-name">DRUMS</h3>
-        <div class="track-controls">
-          <button class="mute-btn" id="mute-drums" onclick="toggleMute('drums')">🔊</button>
-          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-drums" oninput="changeVolume('drums', this.value)">
+        
+        <div class="transport-controls">
+            <button id="play-btn">▶ Reproducir</button>
+            <button id="stop-btn">■ Detener</button>
+            <div class="time-display">
+                <span id="current-time">00:00.000</span> / <span id="total-time">00:00.000</span>
+            </div>
         </div>
-      </div>
-      <div class="waveform-container">
-        <div class="waveform" id="waveform-drums"></div>
-      </div>
-    </div>
-    
-    <div class="track" id="bass-track">
-      <div class="track-header">
-        <h3 class="track-name">BASS</h3>
-        <div class="track-controls">
-          <button class="mute-btn" id="mute-bass" onclick="toggleMute('bass')">🔊</button>
-          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-bass" oninput="changeVolume('bass', this.value)">
+        
+        <div class="progress-container" id="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
         </div>
-      </div>
-      <div class="waveform-container">
-        <div class="waveform" id="waveform-bass"></div>
-      </div>
-    </div>
-    
-    <div class="track" id="vox-track">
-      <div class="track-header">
-        <h3 class="track-name">VOX</h3>
-        <div class="track-controls">
-          <button class="mute-btn" id="mute-vox" onclick="toggleMute('vox')">🔊</button>
-          <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-vox" oninput="changeVolume('vox', this.value)">
+        
+        <div class="tracks-container" id="tracks-container">
+            <div class="loading">Selecciona una canción para cargar sus stems</div>
         </div>
-      </div>
-      <div class="waveform-container">
-        <div class="waveform" id="waveform-vox"></div>
-      </div>
     </div>
-  </div>
-  
-  <script>
-    // Variables globales
-    const players = {
-      melody: null,
-      drums: null,
-      bass: null,
-      vox: null
-    };
-    
-    let isPlaying = false;
-    let currentSong = "CHICLE";
-    
-    // Estado de mute para cada pista
-    const muteState = {
-      melody: false,
-      drums: false,
-      bass: false,
-      vox: false
-    };
-    
-    // Volumen para cada pista
-    const volumeState = {
-      melody: 1,
-      drums: 1,
-      bass: 1,
-      vox: 1
-    };
-    
-    // Formato de tiempo (segundos a MM:SS)
-    function formatTime(seconds) {
-      seconds = Math.floor(seconds);
-      const minutes = Math.floor(seconds / 60);
-      seconds = seconds % 60;
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    }
-    
-    // Actualizar display de tiempo
-    function updateTimeDisplay() {
-      if (!players.melody || !players.melody.isReady) return;
-      
-      const currentTime = players.melody.getCurrentTime();
-      const duration = players.melody.getDuration();
-      
-      document.getElementById('currentTime').textContent = formatTime(currentTime);
-      document.getElementById('totalTime').textContent = formatTime(duration);
-    }
-    
-    // Cargar la canción
-    function loadSong() {
-      // Detener cualquier reproducción en curso
-      stopAll();
-      
-      // Obtener el nombre de la canción
-      currentSong = document.getElementById('songInput').value.trim();
-      if (!currentSong) {
-        alert('Por favor, introduce el nombre de la canción');
-        return;
-      }
-      
-      // Destruir los reproductores existentes si existen
-      Object.entries(players).forEach(([id, player]) => {
-        if (player) {
-          player.destroy();
-          players[id] = null;
-        }
-      });
-      
-      // Crear cada reproductor con los nuevos archivos
-      players.melody = WaveSurfer.create({
-        container: '#waveform-melody',
-        waveColor: '#666',
-        progressColor: var(--waveform-progress),
-        url: `${currentSong}_MELODIA.mp3`
-      });
-      
-      players.drums = WaveSurfer.create({
-        container: '#waveform-drums',
-        waveColor: '#666',
-        progressColor: var(--waveform-progress),
-        url: `${currentSong}_DRUMS.mp3`
-      });
-      
-      players.bass = WaveSurfer.create({
-        container: '#waveform-bass',
-        waveColor: '#666',
-        progressColor: var(--waveform-progress),
-        url: `${currentSong}_BASS.mp3`
-      });
-      
-      players.vox = WaveSurfer.create({
-        container: '#waveform-vox',
-        waveColor: '#666',
-        progressColor: var(--waveform-progress),
-        url: `${currentSong}_VOX.mp3`
-      });
-      
-      // Configurar eventos para cada reproductor
-      Object.entries(players).forEach(([id, player]) => {
-        // Cuando termine un track, detener todos
-        player.on('finish', function() {
-          pauseAll();
-          isPlaying = false;
-          updatePlayPauseButton();
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const repoUrl = 'https://github.com/alleyezonlucid/STEM-PLAYER';
+            const rawBaseUrl = 'https://raw.githubusercontent.com/alleyezonlucid/STEM-PLAYER/main/';
+            
+            const songSelect = document.getElementById('song-select');
+            const playBtn = document.getElementById('play-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const currentTimeDisplay = document.getElementById('current-time');
+            const totalTimeDisplay = document.getElementById('total-time');
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.getElementById('progress-container');
+            const tracksContainer = document.getElementById('tracks-container');
+            
+            let availableSongs = [];
+            let currentSong = null;
+            let tracks = [];
+            let isPlaying = false;
+            let startTime = 0;
+            let animationFrame = null;
+            
+            // Función simulada para obtener la lista de archivos (en una implementación real, esto necesitaría una API)
+            async function fetchRepositoryFiles() {
+                // En una implementación real, esto utilizaría la API de GitHub o un sistema de backend
+                // Para este ejemplo, vamos a simular con algunos datos de muestra
+                
+                // Simulando datos de ejemplo
+                return [
+                    "CHICLE_DRUMS.mp3",
+                    "CHICLE_BASS.mp3",
+                    "CHICLE_SYNTH.mp3",
+                    "CHICLE_VOCALS.mp3",
+                    "FREESTYLE_DRUMS.mp3",
+                    "FREESTYLE_BASS.mp3",
+                    "FREESTYLE_KEYS.mp3",
+                    "FREESTYLE_VOCALS.mp3"
+                ];
+            }
+            
+            function extractSongNames(files) {
+                const songMap = {};
+                
+                files.forEach(file => {
+                    if (file.includes('_') && file.endsWith('.mp3')) {
+                        const parts = file.split('_');
+                        const songName = parts[0];
+                        const stemType = parts[1].replace('.mp3', '');
+                        
+                        if (!songMap[songName]) {
+                            songMap[songName] = [];
+                        }
+                        
+                        songMap[songName].push({
+                            file: file,
+                            type: stemType
+                        });
+                    }
+                });
+                
+                return songMap;
+            }
+            
+            async function initializeSongList() {
+                const files = await fetchRepositoryFiles();
+                const songs = extractSongNames(files);
+                
+                // Limpiamos el select
+                songSelect.innerHTML = '<option value="">Seleccionar canción</option>';
+                
+                // Agregamos las canciones disponibles
+                Object.keys(songs).forEach(songName => {
+                    const option = document.createElement('option');
+                    option.value = songName;
+                    option.textContent = songName;
+                    songSelect.appendChild(option);
+                });
+                
+                availableSongs = songs;
+            }
+            
+            function loadSong(songName) {
+                if (!songName || !availableSongs[songName]) return;
+                
+                // Detener la reproducción actual si existe
+                stopPlayback();
+                
+                const stemFiles = availableSongs[songName];
+                currentSong = songName;
+                tracks = [];
+                
+                // Limpiar el contenedor de pistas
+                tracksContainer.innerHTML = '';
+                
+                // Mensaje de carga
+                tracksContainer.innerHTML = '<div class="loading">Cargando stems...</div>';
+                
+                // Crear un elemento de audio para cada stem
+                const audioPromises = stemFiles.map(stem => {
+                    return new Promise((resolve, reject) => {
+                        const audio = new Audio();
+                        
+                        audio.src = rawBaseUrl + stem.file;
+                        
+                        audio.addEventListener('loadedmetadata', () => {
+                            resolve({
+                                audio: audio,
+                                type: stem.type,
+                                file: stem.file
+                            });
+                        });
+                        
+                        audio.addEventListener('error', () => {
+                            console.error(`Error cargando ${stem.file}`);
+                            reject(new Error(`Error cargando ${stem.file}`));
+                        });
+                    });
+                });
+                
+                // Esperar a que todos los audios se carguen
+                Promise.all(audioPromises)
+                    .then(loadedTracks => {
+                        tracks = loadedTracks;
+                        
+                        // Mostrar la duración total
+                        if (tracks.length > 0) {
+                            const duration = tracks[0].audio.duration;
+                            totalTimeDisplay.textContent = formatTime(duration);
+                        }
+                        
+                        // Limpiar el contenedor
+                        tracksContainer.innerHTML = '';
+                        
+                        // Crear la interfaz para cada pista
+                        tracks.forEach((track, index) => {
+                            const trackElement = document.createElement('div');
+                            trackElement.className = 'track';
+                            
+                            const trackTitle = document.createElement('div');
+                            trackTitle.className = 'track-title';
+                            trackTitle.textContent = track.type;
+                            
+                            const trackControls = document.createElement('div');
+                            trackControls.className = 'track-controls';
+                            
+                            const muteBtn = document.createElement('button');
+                            muteBtn.className = 'track-button mute-btn';
+                            muteBtn.innerHTML = '🔊';
+                            muteBtn.dataset.muted = 'false';
+                            muteBtn.addEventListener('click', () => {
+                                const isMuted = muteBtn.dataset.muted === 'true';
+                                track.audio.muted = !isMuted;
+                                muteBtn.dataset.muted = !isMuted;
+                                muteBtn.innerHTML = !isMuted ? '🔇' : '🔊';
+                            });
+                            
+                            const soloBtn = document.createElement('button');
+                            soloBtn.className = 'track-button solo-btn';
+                            soloBtn.innerHTML = 'S';
+                            soloBtn.dataset.solo = 'false';
+                            soloBtn.addEventListener('click', () => {
+                                const isSolo = soloBtn.dataset.solo === 'true';
+                                
+                                // Desactivamos todos los solos primero
+                                document.querySelectorAll('.solo-btn').forEach(btn => {
+                                    btn.dataset.solo = 'false';
+                                    btn.classList.remove('active');
+                                });
+                                
+                                if (!isSolo) {
+                                    soloBtn.dataset.solo = 'true';
+                                    soloBtn.classList.add('active');
+                                    
+                                    // Silenciar todas las pistas excepto esta
+                                    tracks.forEach((t, i) => {
+                                        if (i === index) {
+                                            t.audio.muted = false;
+                                            trackControls.querySelector('.mute-btn').dataset.muted = 'false';
+                                            trackControls.querySelector('.mute-btn').innerHTML = '🔊';
+                                        } else {
+                                            t.audio.muted = true;
+                                        }
+                                    });
+                                } else {
+                                    // Restaurar todas las pistas a su estado no silenciado
+                                    tracks.forEach(t => {
+                                        t.audio.muted = false;
+                                    });
+                                    
+                                    // Restaurar iconos de mute
+                                    document.querySelectorAll('.mute-btn').forEach(btn => {
+                                        btn.dataset.muted = 'false';
+                                        btn.innerHTML = '🔊';
+                                    });
+                                }
+                            });
+                            
+                            const volumeSlider = document.createElement('input');
+                            volumeSlider.type = 'range';
+                            volumeSlider.className = 'volume-slider';
+                            volumeSlider.min = 0;
+                            volumeSlider.max = 1;
+                            volumeSlider.step = 0.01;
+                            volumeSlider.value = 1;
+                            volumeSlider.addEventListener('input', () => {
+                                track.audio.volume = volumeSlider.value;
+                            });
+                            
+                            trackControls.appendChild(muteBtn);
+                            trackControls.appendChild(soloBtn);
+                            trackElement.appendChild(trackTitle);
+                            trackElement.appendChild(volumeSlider);
+                            trackElement.appendChild(trackControls);
+                            
+                            tracksContainer.appendChild(trackElement);
+                        });
+                    })
+                    .catch(error => {
+                        tracksContainer.innerHTML = `<div class="loading">Error al cargar los stems: ${error.message}</div>`;
+                    });
+            }
+            
+            function startPlayback() {
+                if (!tracks.length || isPlaying) return;
+                
+                // Configurar todos los tracks para reproducción sincronizada
+                tracks.forEach(track => {
+                    track.audio.currentTime = 0;
+                    track.audio.play();
+                });
+                
+                isPlaying = true;
+                startTime = Date.now();
+                playBtn.textContent = "⏸️ Pausar";
+                
+                // Iniciar la actualización de la interfaz
+                updatePlaybackUI();
+            }
+            
+            function pausePlayback() {
+                if (!isPlaying) return;
+                
+                tracks.forEach(track => {
+                    track.audio.pause();
+                });
+                
+                isPlaying = false;
+                playBtn.textContent = "▶ Reproducir";
+                
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                    animationFrame = null;
+                }
+            }
+            
+            function stopPlayback() {
+                pausePlayback();
+                
+                tracks.forEach(track => {
+                    track.audio.currentTime = 0;
+                });
+                
+                currentTimeDisplay.textContent = formatTime(0);
+                progressBar.style.width = '0%';
+            }
+            
+            function updatePlaybackUI() {
+                if (!isPlaying) return;
+                
+                if (tracks.length > 0) {
+                    const currentTime = tracks[0].audio.currentTime;
+                    const duration = tracks[0].audio.duration;
+                    
+                    currentTimeDisplay.textContent = formatTime(currentTime);
+                    
+                    if (duration > 0) {
+                        const percentage = (currentTime / duration) * 100;
+                        progressBar.style.width = `${percentage}%`;
+                    }
+                    
+                    // Verificar si la reproducción ha terminado
+                    if (currentTime >= duration) {
+                        stopPlayback();
+                        return;
+                    }
+                }
+                
+                animationFrame = requestAnimationFrame(updatePlaybackUI);
+            }
+            
+            function seekToPosition(event) {
+                if (!tracks.length) return;
+                
+                const rect = progressContainer.getBoundingClientRect();
+                const position = (event.clientX - rect.left) / rect.width;
+                
+                const duration = tracks[0].audio.duration;
+                const newTime = position * duration;
+                
+                tracks.forEach(track => {
+                    track.audio.currentTime = newTime;
+                });
+                
+                currentTimeDisplay.textContent = formatTime(newTime);
+                
+                if (!isPlaying) {
+                    const percentage = (newTime / duration) * 100;
+                    progressBar.style.width = `${percentage}%`;
+                }
+            }
+            
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                seconds = seconds % 60;
+                const ms = Math.floor((seconds % 1) * 1000);
+                
+                return `${String(minutes).padStart(2, '0')}:${String(Math.floor(seconds)).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+            }
+            
+            // Event Listeners
+            songSelect.addEventListener('change', () => {
+                loadSong(songSelect.value);
+            });
+            
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    pausePlayback();
+                } else {
+                    startPlayback();
+                }
+            });
+            
+            stopBtn.addEventListener('click', stopPlayback);
+            
+            progressContainer.addEventListener('click', seekToPosition);
+            
+            // Inicializar la aplicación
+            initializeSongList();
         });
-        
-        // Sincronizar la posición de reproducción
-        player.on('seek', function(position) {
-          syncSeekPosition(id, position);
-        });
-        
-        // Actualizar el tiempo de reproducción
-        player.on('audioprocess', updateTimeDisplay);
-        
-        // Al cargar, restaurar el estado de mute y volumen
-        player.on('ready', function() {
-          player.setMute(muteState[id]);
-          player.setVolume(volumeState[id]);
-          
-          if (id === 'melody') {
-            updateTimeDisplay();
-          }
-        });
-        
-        // Manejar errores de carga
-        player.on('error', function(err) {
-          console.error(`Error al cargar ${id} para la canción ${currentSong}:`, err);
-        });
-      });
-    }
-    
-    // Inicializar cuando se carga la página
-    document.addEventListener('DOMContentLoaded', function() {
-      loadSong();
-    });
-    
-    // Función para sincronizar la posición de reproducción
-    function syncSeekPosition(sourceId, position) {
-      Object.entries(players).forEach(([id, player]) => {
-        if (id !== sourceId && player && player.isReady) {
-          player.seekTo(position);
-        }
-      });
-    }
-    
-    // Función para activar/desactivar el mute de una pista
-    function toggleMute(id) {
-      if (!players[id] || !players[id].isReady) return;
-      
-      muteState[id] = !muteState[id];
-      players[id].setMute(muteState[id]);
-      
-      // Actualizar el botón
-      const muteBtn = document.getElementById(`mute-${id}`);
-      if (muteState[id]) {
-        muteBtn.textContent = '🔇';
-        muteBtn.classList.add('muted');
-      } else {
-        muteBtn.textContent = '🔊';
-        muteBtn.classList.remove('muted');
-      }
-    }
-    
-    // Función para cambiar el volumen de una pista
-    function changeVolume(id, value) {
-      if (!players[id] || !players[id].isReady) return;
-      
-      const volume = value / 100;
-      volumeState[id] = volume;
-      players[id].setVolume(volume);
-    }
-    
-    // Función para reproducir o pausar todas las pistas
-    function togglePlayPause() {
-      if (isPlaying) {
-        pauseAll();
-      } else {
-        playAll();
-      }
-      
-      isPlaying = !isPlaying;
-      updatePlayPauseButton();
-    }
-    
-    // Detener toda la reproducción y volver al inicio
-    function stopAll() {
-      pauseAll();
-      
-      Object.values(players).forEach(player => {
-        if (player && player.isReady) {
-          player.seekTo(0);
-        }
-      });
-      
-      isPlaying = false;
-      updatePlayPauseButton();
-      updateTimeDisplay();
-    }
-    
-    // Actualizar el botón de reproducción/pausa
-    function updatePlayPauseButton() {
-      const playPauseBtn = document.getElementById('playPauseBtn');
-      playPauseBtn.textContent = isPlaying ? '⏸️ PAUSE' : '▶️ PLAY';
-    }
-    
-    // Función para reproducir todas las pistas
-    function playAll() {
-      Object.values(players).forEach(player => {
-        if (player && player.isReady) {
-          player.play();
-        }
-      });
-    }
-    
-    // Función para pausar todas las pistas
-    function pauseAll() {
-      Object.values(players).forEach(player => {
-        if (player && player.isReady) {
-          player.pause();
-        }
-      });
-    }
-  </script>
+    </script>
 </body>
 </html>
